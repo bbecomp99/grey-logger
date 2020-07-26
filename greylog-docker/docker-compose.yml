@@ -1,41 +1,56 @@
-version: '3'
+version: '2'
 services:
   # MongoDB: https://hub.docker.com/_/mongo/
-  mongo:
+  mongodb:
     image: mongo:3
-    networks:
-      - graylog
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+        tag: "system"
+    volumes:
+      - gl-dock_mongo_data:/data/db
   # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.x/docker.html
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.2
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.5
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+        tag: "system"
+    volumes:
+      - gl-dock_es_data:/usr/share/elasticsearch/data
     environment:
       - http.host=0.0.0.0
       - transport.host=localhost
       - network.host=0.0.0.0
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx786m"
     ulimits:
       memlock:
         soft: -1
         hard: -1
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-    networks:
-      - graylog
+    mem_limit: 1g
   # Graylog: https://hub.docker.com/r/graylog/graylog/
   graylog:
-    image: graylog/graylog:3.1
+    image: graylog/graylog:3.3
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+        tag: "system"
+    volumes:
+      - gl-dock_graylog_journal:/usr/share/graylog/data/journal
     environment:
       # CHANGE ME (must be at least 16 characters)!
-      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
-      # Password: admin
-      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
-    networks:
-      - graylog
+      - GRAYLOG_PASSWORD_SECRET=peppersaltyrocks
+      # Password: pr0logs@1234$
+      - GRAYLOG_ROOT_PASSWORD_SHA2=3a8d4a413c772eccc2dc5a46d75b5294f954c44c0eb8bc60211186b57446ed7c
+      - GRAYLOG_HTTP_EXTERNAL_URI=https://gl.scs.procurant.io/
+    links:
+      - mongodb:mongo
+      - elasticsearch
     depends_on:
-      - mongo
+      - mongodb
       - elasticsearch
     ports:
       # Graylog web interface and REST API
@@ -48,6 +63,11 @@ services:
       - 12201:12201
       # GELF UDP
       - 12201:12201/udp
-networks:
-  graylog:
-    driver: bridge
+# Volumes for persisting data, see https://docs.docker.com/engine/admin/volumes/volumes/
+volumes:
+  gl-dock_mongo_data:
+    driver: local
+  gl-dock_es_data:
+    driver: local
+  gl-dock_graylog_journal:
+    driver: local
