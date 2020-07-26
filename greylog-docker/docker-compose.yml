@@ -45,7 +45,7 @@ services:
       - GRAYLOG_PASSWORD_SECRET=peppersaltyrocks
       # Password: pr0logs@1234$
       - GRAYLOG_ROOT_PASSWORD_SHA2=3a8d4a413c772eccc2dc5a46d75b5294f954c44c0eb8bc60211186b57446ed7c
-      - GRAYLOG_HTTP_EXTERNAL_URI=https://gl.scs.procurant.io/
+      - GRAYLOG_HTTP_EXTERNAL_URI=https://***/
     links:
       - mongodb:mongo
       - elasticsearch
